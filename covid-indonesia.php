@@ -9,12 +9,13 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
     <link rel="manifest" href="/site.webmanifest">
-    <meta name="title" content="Data statistik penyebaran virus Covid-19">
+    <meta name="title" content="Data statistik penyebaran virus Covid-19 di Indonesia">
     <meta name="description" content="Data statistik lengkap penyebaran virus Covid-19 di seluruh dunia update!">
     <meta name="keywords" content="Covid19, Covid, Covid-19">
     <meta name="author" content="Mas Sahal">
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css" integrity="sha384-TX8t27EcRE3e/ihU7zmQxVncDAy5uIKz4rEkgIXeMed4M0jlfIDPvg6uqKI2xXr2" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.22/css/jquery.dataTables.min.css">
     <style>
         /* Footer */
         @import url('https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css');
@@ -75,45 +76,54 @@
     <!-- Bagian Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="https://mstech-covid-19.000webhostapp.com">World Data Covid-19</a>
+            <a class="navbar-brand" href="https://mstech-covid-19.000webhostapp.com/covid-indonesia.php">Covid-19 Indonesia</a>
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
+
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
                 <ul class="navbar-nav mr-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="https://mstech-covid-19.000webhostapp.com">World</a>
+                        <a class="nav-link" href="https://mstech-covid-19.000webhostapp.com">World<span class="sr-only">(current)</span></a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="https://mstech-covid-19.000webhostapp.com/covid-indonesia.php">Indonesia</a>
                     </li>
-
                 </ul>
-                <form class="form-inline my-2 my-lg-0" method="get">
-                    <input class="form-control mr-sm-2" type="search" placeholder="Search" name="country" aria-label="Search">
-                    <button class="btn btn-light my-2 my-sm-0" type="submit">
-                        Cari Negara
-                    </button>
-                </form>
             </div>
         </div>
     </nav>
 
     <?php
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
-    if (isset($_GET['country']) && !empty($_GET['country'])) {
+    function http_request($url)
+    {
+        // persiapkan curl
+        $ch = curl_init();
 
-        curl_setopt($ch, CURLOPT_URL, 'https://covid19.mathdro.id/api/countries/' . urlencode($_GET['country']));
-        $result = curl_exec($ch);
-        $data = json_decode($result, true);
+        // set url 
+        curl_setopt($ch, CURLOPT_URL, $url);
 
-        curl_setopt($ch, CURLOPT_URL, 'https://covid19.mathdro.id/api');
-        $MainApi = curl_exec($ch);
-        $totalStatistics = json_decode($MainApi, true);
+        // set user agent    
+        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.13) Gecko/20080311 Firefox/2.0.0.13');
+
+        // return the transfer as a string 
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+
+        // $output contains the output string 
+        $output = curl_exec($ch);
+
+        // tutup curl 
+        curl_close($ch);
+
+        // mengembalikan hasil curl
+        return $output;
     }
+
+    $profile = http_request("https://opendata.arcgis.com/datasets/0c0f4558f1e548b68a1c82112744bad3_0.geojson");
+
+    // ubah string JSON menjadi array
+    $profile = json_decode($profile, TRUE);
     ?>
     <div class="container py-3">
 
@@ -121,50 +131,54 @@
         <div class="row">
             <!--Awal Bagian tabel -->
             <div class="col">
-                <h3 class="text-center">Persebaran Covid-19 Di Dunia - made with ❤ by sahal from mathdroid </h3>
+                <h3 class="text-center">Persebaran Covid-19 Di Indonesia - made with ❤ by sahal from BNPB</h3>
                 <hr>
 
-                <?php if (!empty($data['confirmed'])) { ?>
+                <h3 class="text-center">Update Statistik Covid-19 di Indonesia</h3>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-dark table-hover" id="table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Provinsi</th>
+                                <th>Positif</th>
+                                <th>Sembuh</th>
+                                <th>Meninggal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
 
-                    <h3 class="text-center">Update Statistik Covid-19 di <?php echo htmlspecialchars($_GET['country'], ENT_QUOTES); ?></h3>
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-dark" id="table">
-                            <thead>
-                                <tr>
-                                    <th>Positif</th>
-                                    <th>Sembuh</th>
-                                    <th>Meninggal</th>
-                                    <th>Update</th>
-                                </tr>
-                            </thead>
-                            <tbody>
 
+                            <?php
+                            $no = 0;
+                            $data = ($profile['features']);
+                            foreach ($data as $conf => $key) {
+                                # code...
 
-                                <!-- // $sumber = 'https://covid19.mathdro.id/api/confirmed';
-                            // $konten = file_get_contents($sumber);
-                            // $data = json_decode($konten, true);
-                            // var_dump($data); -->
-
+                            ?>
                                 <tr class="text-dark">
-                                    <td class="table-danger ">
-                                        <?= number_format($data['confirmed']['value']); ?>
+                                    <td class="table-secondary ">
+                                        <?= $no += 1; ?>
+                                    </td>
+                                    <td class="table-info">
+                                        <?= $key['properties']['Provinsi']; ?>
+                                    </td>
+                                    <td class="table-danger">
+                                        <?= number_format($key['properties']['Kasus_Posi']); ?>
                                     </td>
                                     <td class="table-success">
-                                        <?= number_format($data['recovered']['value']); ?>
+                                        <?= number_format($key['properties']['Kasus_Semb']); ?>
                                     </td>
                                     <td class="table-warning">
-                                        <?= number_format($data['deaths']['value']); ?>
-                                    </td>
-                                    <td class="table-secondary">
-                                        <?= $data['lastUpdate']; ?>
+                                        <?= number_format($key['properties']['Kasus_Meni']); ?>
                                     </td>
                                 </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php } ?>
-                <img class='mt-2 text-center ' src='https://covid19.mathdro.id/api/og' height="500px" width="100%" />
-
+                            <?php
+                            }
+                            ?>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
         <!--Akhir Bagian tabel -->
@@ -193,8 +207,14 @@
 
     <!-- Option 2: jQuery, Popper.js, and Bootstrap JS -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+    <script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.min.js" integrity="sha384-w1Q4orYjBQndcko6MimVbzY0tgp4pWB4lZ7lr30WKz0vr/aWKhXdBNmNb5D92v7s" crossorigin="anonymous"></script>
+    <script>
+        $(document).ready(function() {
+            $('#table').DataTable();
+        });
+    </script>
 </body>
 
 </html>
